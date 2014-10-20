@@ -1,0 +1,75 @@
+---
+title: "Documentation for World Bank Global Temperature Predictions"
+author: "Nicole Goebel"
+date: "October 16, 2014"
+output: html_document
+---
+
+##Quick Instructions
+Simply select a hindcast ("pre-2000") or a prediction (scenario `a2` or `b1`) climate scenario and then select the desired two-decade range in years (e.g., "1920-1939") in order to see the mean annual temperature for each selection (top and middle plots) as well as the difference in selections across the globe (bottom plot). These data represent average temperature predictions by ensembles of general circulation models for past, high (`a2`) and/or moderate (`b1`) changes in greenhouse gases between the years 1920 and 2099. Be patient as this app can take up to 6 minutes to load.
+
+More information on how this was constructed is shown in the report below.
+
+The R shiny code can be found on [GitHub](https://github.com/nicolegoebel/WorldBank_RstudioShinyApp).
+
+##Introduction
+The `rWBclimate` package as found on [GitHub](http://github.com/ropensci/rWBclimate) and described in the R [vignette](http://cran.r-project.org/web/packages/rWBclimate/vignettes/rWBclimate.pdf) and [pdf](http://cran.r-project.org/web/packages/rWBclimate/rWBclimate.pdf), offers an R interface for the World Bank climate predictions as found in the [World Bank Climate Change Knowledge Portal](http://sdwebx.worldbank.org/climateportal/index.cfm). This data set offers predictions of temperature and precipitation to change in rising greenhouse gases across global land masses according to 15 different General Circulation Models (GCMs). More information about the World Data Bank can be found [here](http://data.worldbank.org/). 
+
+This simple application allows the user to select two time periods of hindcasts or predictions across the globe and calculate their differences. If selecting a prediction climate scenario, the predicted temperature is a response to greenhouse gas emissions that either 1) increase over time and reach 850 ppm by 2100 (scenario `a2`) or 2) level off around mid-century and reach 550 ppm by 2100 (`b1`) [(IPCC, 2000)](http://www.ipcc.ch/ipccreports/tar/wg1/pdf/WG1_TAR-FRONT.PDF).
+
+##Installation and Access to World Bank Climate Prediction Data
+
+The `rWBclimate` package can be installed from GitHub and used in R by typing:
+
+```R
+install.packages("rWBclimate") 
+library(rWBclimate)
+```
+
+##Data Description and Extraction
+Three different classes of temperature (in degrees Celcius) and precipitation (in mm) predictions can be extracted from `rWBclimate`: GCMs, ensembles of GCMs and historical data. Each model type can be resolved by country (using [ISO 3 letter country code](http://userpage.chemie.fu-berlin.de/diverse/doc/ISO_3166.html)) or more highly resolved basin (numbered 1-468 as displayed [here](http://data.worldbank.org/sites/default/files/climate_data_api_basins.pdf)). Each variable (precipitation or temperature) can be aggregated by monthly or annual averages, as well as monthly or annual anomalies. 
+
+The GCMs simulate temperature and precipitation responses to increasing gereenhouse gas concentrations. Each model includes hindcasts and predictions for 20-year periods between 1920 and 2099. Two different model scenarios exist: sceneario `a2` corresponds to relatively unconstrained growth in emissions and shows little difference between the future and present, while scenario `b1` eliminates increases in global emissions  by 2100 and therefore predicts a world with fewer emissions [(IPCC, 2000)](http://www.ipcc.ch/ipccreports/tar/wg1/pdf/WG1_TAR-FRONT.PDF). These are the same models used in the [Intergovernmental Panel on Climate Change 4th Asessment Report](http://www.ipcc.ch/publications_and_data/publications_ipcc_fourth_assessment_report_synthesis_report.htm).
+
+For this application, all countries were used (as available through `rWBclimate`) at the country resolution. Country "UMI", representing United States Minor Outlying Islands, was deleted since this country was unavailable in the map data (see below). Temperature was extracted for annual averages from 1920 to 2099 for the 50th percentile of each ensemble scenario, as shown below:
+
+```R
+# all selected countries are concatenated into one vector
+world <- c(NoAm_country, SoAm_country, Eur_country, Asia_country, Africa_country, Oceana_country)
+world<-world[! world %in% c("UMI")] # UMI was unavailable in the map data frame therefore was excluded
+world_dat <- get_ensemble_temp(world, "annualavg", start=1900, end=2100)  # GCM ensemble annual averaged temperature predictions
+world_dat$data <- as.numeric(as.character(world_dat$data)) #make data numeric
+world_dat<-subset(world_dat,world_dat$percentile==50) #subset to median percentile
+world_dat$years=paste(world_dat$fromYear,world_dat$toYear, sep="-") #merge two variables to create new one
+world_dat<-subset(world_dat, select=-c(percentile, scenario, fromYear, toYear)) #omit unnecessary variables
+```
+
+##Plotting Data
+Data was plotted using the wrapper for ggplot2 available in the `rWBclimate` package (`climate_map()`). In addition to the model data extracted (above), map data (including longitude, latitude, etc) was also necessary for plotting.  Map data for all countries but "UMI" were extracted and cached locally:
+
+```R
+# KML files for the map data, cached locally in a specified directory
+options(kmlpath = "/Users/nicolegoebel/Desktop/tempPredict_oneplot")
+world_map_df <- create_map_df(world)   # map data frame created for plotting
+```
+
+Selected years and climate scenarios for each GCM ensemble were plotted with the ggplot2 wrapper, `climate_map()`. The limits of the color scale for the GCM ensembles were set to the same range.
+
+```R
+climate_map(world_map_df,dfA,return_map = T) + scale_fill_gradient2(limits=c(-20, 34), low="blue", mid="white", high = "red", space="rgb", guide="colourbar")})
+climate_map(world_map_df,dfB,return_map = T) + scale_fill_gradient2(limits=c(-20, 34), low="blue", mid="white", high = "red", space="rgb", guide="colourbar")})
+```
+
+Finally, a difference between selected model and historical data were plotted after taking the difference between these two data sets:
+
+```R
+dfd$data<-dfA$data-dfB$data
+climate_map(world_map_df,dfd,return_map = T) + scale_fill_gradient2(low="blue", mid="white", high = "red", space="rgb", guide="colourbar")
+```
+
+##Reference
+Edmund Hart (). rWBclimate: A package for accessing World Bank climate data. R package version 0.1.3
+http://github.com/ropensci/rWBclimate
+
+Intergovernmental Panel on Climate Change (IPCC): Climate Change 2001: The Scientific Bias, edited by: Houghton, J. T. and Ding, Y.,, Cambridge, Cambridge UP, 2001. http://www.ipcc.ch/ipccreports/tar/wg1/pdf/WG1_TAR-FRONT.PDF
+
