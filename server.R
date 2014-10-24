@@ -3,7 +3,8 @@ library(httpuv)
 #install.packages("rWBclimate")
 library(rWBclimate)
 library(ggplot2)
-
+#library(shinyapps)
+#shinyapps::configureApp("temperature_map_prediction", size="xxlarge") #to change memory limit - run after deployment
 # get data from API
 # get temperature data for ensembles
 st=1900
@@ -37,7 +38,7 @@ shinyServer(function(input, output){
   output$add2 <- renderText({paste(input$scen2, " scenario", " (",yr2(),")") })
   #output$add2 <- renderText({paste("Temperature prediction for years ", yr2(), " and ", input$scen2, " scenario") })
   #output$add3<- renderText({paste("Difference between ", input$scen1, " model predictions ", "(", yr1(), ") and ",input$scen2, " model predictions", "(", yr2(), ")")})
-  output$add3<- renderText({paste("Difference between ", input$scen1, " scenario", " (",yr1(),") and ",input$scen2, " scenario", " (",yr2(),")")})
+  output$add3<- renderText({paste("difference between ", input$scen1, " scenario", " (",yr1(),") and ",input$scen2, " scenario", " (",yr2(),")")})
   
   dfyr1<-reactive({subset(world_dat, world_dat$years==yr1())})
   dfyr2<-reactive({subset(world_dat, world_dat$years==yr2())})
