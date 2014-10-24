@@ -63,7 +63,9 @@ shinyUI(pageWithSidebar(
     imageOutput("plot2"),    
     h3(textOutput("add3"), align="center"),
     imageOutput("plotdiff"),
-    HTML("More information about the general circulation model ensembles can be found at the <a href='www.data.worldbank.org/'> World Bank website</a>.")
+    p("More information about the general circulation model ensembles can be found at the ", a("World Bank website.", href = "http://data.worldbank.org/", target="_blank"))
+    #HTML("More information about the general circulation model ensembles can be found at the <a href='http://data.worldbank.org/'> World Bank website</a>.")
+    #tags$a(href="www.data.worldbank.org", "See the World Bank website for more information about the general circulation model ensembles.")
   )  
 )
 )
